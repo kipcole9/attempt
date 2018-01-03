@@ -60,8 +60,6 @@ defmodule Attempt do
   end
 
   defp execute(fun, retry_policy, token_bucket, max_tries, current_try, options) do
-    IO.puts("private execute")
-
     with {:ok, _remaining_tokens} <- Bucket.claim_token(token_bucket, options),
          result = execute_function(fun) do
       case retry_policy.action(result) do
@@ -79,8 +77,6 @@ defmodule Attempt do
   end
 
   defp execute_function(fun) do
-    IO.puts("About to execute function")
-
     try do
       fun.()
     rescue
