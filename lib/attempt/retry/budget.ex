@@ -6,6 +6,10 @@ defmodule Attempt.Budget do
 
   defstruct max_requests_per_second: 10
 
+  def init(args) do
+    {:ok, args}
+  end
+
   def new(budget, options) when is_list(options) and is_atom(budget) do
     options =
       default_options()
