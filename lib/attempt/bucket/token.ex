@@ -38,27 +38,32 @@ defmodule Attempt.Bucket.Token do
   use GenServer
   require Logger
 
-  defstruct burst_size:       10,       # Maximum number of tokens that can be consumed in a burst
-            fill_rate:        3,        # Add a tken each per fill_rate milliseconds
-            max_queue_length: 100,      # Don't allow the queue to expand forever
-            increment_every:  nil,      # Increment the token count ever n milliseconds
-            queue:            nil,      # The pending queue
-            tokens:           nil,      # Available tokens
-            pid:              nil       # The PID of this bucket
+  # Maximum number of tokens that can be consumed in a burst
+  defstruct burst_size: 10,
+            # Add a token each per fill_rate milliseconds
+            fill_rate: 3,
+            # Don't allow the queue to expand forever
+            max_queue_length: 100,
+            # Increment the token count ever n milliseconds
+            increment_every: nil,
+            # The pending queue
+            queue: nil,
+            # Available tokens
+            tokens: nil,
+            # The name of this bucket
+            name: nil
 
   @default_config @struct
   @default_timeout @struct.fill_rate
 
-  def new(name, config \\ @default_config) do
-    {:ok, pid} = start_link(name, config)
-    %{config | pid: pid}
+  def new(name, config \\ @default_config) when is_atom(name) do
+    config = %{config | name: name}
+    {:ok, _} = start_link(name, config)
+    {:ok, config}
   end
 
   def start_link(name, config \\ @default_config) do
-    config = %{config |
-      tokens: config.burst_size,
-      queue: :queue.new
-    }
+    config = %{config | tokens: config.burst_size, queue: :queue.new()}
     GenServer.start_link(__MODULE__, config, name: name)
   end
 
@@ -69,10 +74,12 @@ defmodule Attempt.Bucket.Token do
 
   def claim_token(bucket, options \\ []) do
     timeout = options[:timeout] || @default_timeout
+
     try do
       GenServer.call(bucket, :claim_token, timeout)
-    catch :exit, reason ->
-      {:error, reason}
+    catch
+      :exit, reason ->
+        {:error, reason}
     end
   end
 
@@ -108,7 +115,7 @@ defmodule Attempt.Bucket.Token do
 
   def handle_info(:increment_bucket, bucket) do
     schedule_fill(bucket)
-    bucket = %{bucket | tokens: min(bucket.tokens + 1, bucket.bucket_size)}
+    bucket = %{bucket | tokens: min(bucket.tokens + 1, bucket.burst_size)}
     {:noreply, process_queue(bucket)}
   end
 
@@ -118,7 +125,7 @@ defmodule Attempt.Bucket.Token do
     else
       bucket = decrement(bucket)
       {{_, pid}, new_queue} = :queue.out(queue)
-      GenServer.reply pid, {:ok, bucket.tokens}
+      GenServer.reply(pid, {:ok, bucket.tokens})
       process_queue(%{bucket | queue: new_queue})
     end
   end
