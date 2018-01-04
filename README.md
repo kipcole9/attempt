@@ -74,13 +74,13 @@ See primarily:
 
 ## Todo
 
-  [ ] Enforce maximum queue depth in `Attempt.Bucket.Token`
-  [ ] Implement a [Leaky Bucket](https://en.wikipedia.org/wiki/Leaky_bucket)
-  [ ] Wire up retry backoff strategies into `Attempt.execute/2`
-  [ ] Tests
-  [ ] Specs
-  [ ] Improve Documentation
-  [ ] Implement the `!` version of `Attempt.execute!/2`
+* [ ] Enforce maximum queue depth in `Attempt.Bucket.Token`
+* [ ] Implement a [Leaky Bucket](https://en.wikipedia.org/wiki/Leaky_bucket)
+* [ ] Wire up retry backoff strategies into `Attempt.execute/2`
+* [ ] Tests
+* [ ] Specs
+* [ ] Improve Documentation
+* [ ] Implement the `!` version of `Attempt.execute!/2`
 
 ## Installation
 
