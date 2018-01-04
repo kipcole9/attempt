@@ -89,7 +89,7 @@ See primarily:
 ```elixir
 def deps do
   [
-    {:attempt, "~> 0.1.0"}
+    {:attempt, "~> 0.2.0"}
   ]
 end
 ```
