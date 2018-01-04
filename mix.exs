@@ -7,6 +7,7 @@ defmodule Attempt.Mixfile do
     [
       app: :attempt,
       version: @version,
+      description: description(),
       elixir: "~> 1.5",
       start_permanent: Mix.env == :prod,
       deps: deps(),
@@ -19,6 +20,12 @@ defmodule Attempt.Mixfile do
     [
       extra_applications: [:logger]
     ]
+  end
+
+  def description do
+    """
+    Implements a retry budget and token bucket for retriable function execution
+    """
   end
 
   defp deps do
