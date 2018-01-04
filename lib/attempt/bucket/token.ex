@@ -44,22 +44,44 @@ defmodule Attempt.Bucket.Token do
             fill_rate: 3,
             # Don't allow the queue to expand forever
             max_queue_length: 100,
-            # Increment the token count ever n milliseconds
-            increment_every: nil,
             # The pending queue
             queue: nil,
             # Available tokens
-            tokens: nil,
+            tokens: 0,
             # The name of this bucket
             name: nil
 
   @default_config @struct
-  @default_timeout @struct.fill_rate
+  @default_timeout 5_000
 
-  def new(name, config \\ @default_config) when is_atom(name) do
+  def new(name, config \\ @default_config)
+
+  def new(name, config) when is_atom(name) and is_list(config) do
+   config =
+      @default_config
+      |> Map.delete(:__struct__)
+      |> Map.to_list
+      |> Keyword.merge(config)
+      |> Enum.into(%{})
+
+    new(name, struct(__MODULE__, config))
+  end
+
+  def new(name, config) when is_atom(name) and is_map(config) do
     config = %{config | name: name}
-    {:ok, _} = start_link(name, config)
-    {:ok, config}
+    case start_link(name, config) do
+      {:ok, _} -> {:ok, config}
+      {:error, reason} -> {:error, reason, config}
+    end
+  end
+
+  def new!(name, config) do
+    {:ok, bucket} = new(name, config)
+    bucket
+  end
+
+  def state(bucket) do
+    GenServer.call(bucket.name, :state)
   end
 
   def start_link(name, config \\ @default_config) do
@@ -68,7 +90,7 @@ defmodule Attempt.Bucket.Token do
   end
 
   def init(config) do
-    schedule_fill(config)
+    schedule_increment(config)
     {:ok, config}
   end
 
@@ -76,7 +98,7 @@ defmodule Attempt.Bucket.Token do
     timeout = options[:timeout] || @default_timeout
 
     try do
-      GenServer.call(bucket, :claim_token, timeout)
+      GenServer.call(bucket.name, :claim_token, timeout)
     catch
       :exit, reason ->
         {:error, reason}
@@ -90,12 +112,13 @@ defmodule Attempt.Bucket.Token do
 
   # Callbacks
 
-  def handle_call(:claim_token, _from, %{tokens: tokens, queue: queue} = bucket) when tokens > 0 do
-    if :queue.len(queue) > 0 do
-      process_queue(bucket)
-    else
+  def handle_call(:claim_token, from, %{tokens: tokens} = bucket) when tokens > 0 do
+    bucket = process_queue(bucket)
+    if bucket.tokens > 0 do
       bucket = decrement(bucket)
       {:reply, {:ok, bucket.tokens}, bucket}
+    else
+      handle_call(:claim_token, from, bucket)
     end
   end
 
@@ -113,8 +136,12 @@ defmodule Attempt.Bucket.Token do
     end
   end
 
+  def handle_call(:state, _from, bucket) do
+    {:reply, {:ok, bucket}, bucket}
+  end
+
   def handle_info(:increment_bucket, bucket) do
-    schedule_fill(bucket)
+    schedule_increment(bucket)
     bucket = %{bucket | tokens: min(bucket.tokens + 1, bucket.burst_size)}
     {:noreply, process_queue(bucket)}
   end
@@ -134,7 +161,7 @@ defmodule Attempt.Bucket.Token do
     %{bucket | tokens: bucket.tokens - 1}
   end
 
-  defp schedule_fill(bucket) do
+  defp schedule_increment(bucket) do
     Process.send_after(self(), :increment_bucket, bucket.fill_rate)
   end
 end
