@@ -39,5 +39,4 @@ defmodule Attempt.Retry.DefaultPolicy do
   def action(_return) do
     :return
   end
-
 end

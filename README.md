@@ -76,9 +76,9 @@ See primarily:
 
   [ ] Enforce maximum queue depth in `Attempt.Bucket.Token`
   [ ] Implement a [Leaky Bucket](https://en.wikipedia.org/wiki/Leaky_bucket)
-  [ ] Buckets should be started under a DynamicSupervisor
-  [ ] Implement retry backoff strategies
+  [ ] Wire up retry backoff strategies into `Attempt.execute/2`
   [ ] Tests
+  [ ] Specs
   [ ] Improve Documentation
   [ ] Implement the `!` version of `Attempt.execute!/2`
 

@@ -1,7 +1,7 @@
 defmodule Attempt.Mixfile do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.2.0"
 
   def project do
     [
@@ -9,7 +9,7 @@ defmodule Attempt.Mixfile do
       version: @version,
       description: description(),
       elixir: "~> 1.5",
-      start_permanent: Mix.env == :prod,
+      start_permanent: Mix.env() == :prod,
       deps: deps(),
       docs: docs(),
       package: package()
@@ -18,6 +18,7 @@ defmodule Attempt.Mixfile do
 
   def application do
     [
+      mod: {Attempt.Application, []},
       extra_applications: [:logger]
     ]
   end

@@ -117,17 +117,28 @@ defmodule Attempt do
       {:error, {:timeout, {GenServer, :call, [:test, :claim_token, 5000]}}}
 
   """
-  def execute(fun, options \\ []) do
+  def execute(fun, options \\ [])
+
+  def execute(fun, options) when is_list(options) do
     options =
       default_options()
       |> Keyword.merge(options)
       |> Enum.into(%{})
+      |> Map.put(:current_try, 1)
       |> maybe_start_default_bucket
 
-    execute(fun, options[:retry_policy], options[:token_bucket], options[:tries], 1, options)
+    execute(fun, struct(Retry.Budget, options))
   end
 
-  defp execute(fun, retry_policy, token_bucket, max_tries, current_try, options) do
+  def execute(
+        fun,
+        %Retry.Budget{
+          retry_policy: retry_policy,
+          token_bucket: token_bucket,
+          tries: max_tries,
+          current_try: current_try
+        } = options
+      ) do
     with {:ok, _remaining_tokens} <- Bucket.claim_token(token_bucket, options),
          result = execute_function(fun) do
       case retry_policy.action(result) do
@@ -138,7 +149,7 @@ defmodule Attempt do
           if current_try >= max_tries do
             result
           else
-            execute(fun, retry_policy, token_bucket, max_tries, current_try + 1, options)
+            execute(fun, %{options | current_try: current_try + 1})
           end
 
         :reraise ->
@@ -153,11 +164,11 @@ defmodule Attempt do
       fun.()
     rescue
       e ->
-        {e, System.stacktrace}
+        {e, System.stacktrace()}
     end
   end
 
-  @default_bucket_name :attempt_default_bucket
+  @default_bucket_name Attempt.Bucket.Token.Default
   @default_tries 1
 
   defp default_options do

@@ -1,3 +1,3 @@
 defmodule Attempt.Retry do
-  @callback action(term()) :: :return | :retry
+  @callback action(term()) :: :return | :retry | :reraise
 end

@@ -36,7 +36,11 @@ defmodule Attempt.Bucket.Token do
   """
 
   use GenServer
+  alias Attempt.Bucket
+  alias Attempt.Retry.Budget
+
   require Logger
+  import Supervisor.Spec
 
   # Maximum number of tokens that can be consumed in a burst
   defstruct burst_size: 10,
@@ -57,10 +61,10 @@ defmodule Attempt.Bucket.Token do
   def new(name, config \\ @default_config)
 
   def new(name, config) when is_atom(name) and is_list(config) do
-   config =
+    config =
       @default_config
       |> Map.delete(:__struct__)
-      |> Map.to_list
+      |> Map.to_list()
       |> Keyword.merge(config)
       |> Enum.into(%{})
 
@@ -69,15 +73,20 @@ defmodule Attempt.Bucket.Token do
 
   def new(name, config) when is_atom(name) and is_map(config) do
     config = %{config | name: name}
-    case start_link(name, config) do
+
+    bucket_worker = worker(__MODULE__, [name, config])
+
+    case DynamicSupervisor.start_child(Bucket.Supervisor, bucket_worker) do
       {:ok, _} -> {:ok, config}
       {:error, reason} -> {:error, reason, config}
     end
   end
 
   def new!(name, config) do
-    {:ok, bucket} = new(name, config)
-    bucket
+    case new(name, config) do
+      {:ok, bucket} -> bucket
+      error -> raise "Couldn't start bucket #{inspect(config.token_bucket)}: #{inspect(error)}"
+    end
   end
 
   def state(bucket) do
@@ -94,8 +103,8 @@ defmodule Attempt.Bucket.Token do
     {:ok, config}
   end
 
-  def claim_token(bucket, options \\ []) do
-    timeout = options[:timeout] || @default_timeout
+  def claim_token(bucket, %Budget{} = budget) do
+    timeout = budget.timeout || @default_timeout
 
     try do
       GenServer.call(bucket.name, :claim_token, timeout)
@@ -105,8 +114,8 @@ defmodule Attempt.Bucket.Token do
     end
   end
 
-  def claim_token!(bucket, options \\ []) do
-    timeout = options[:timeout] || @default_timeout
+  def claim_token!(bucket, %Budget{} = budget) do
+    timeout = budget.timeout || @default_timeout
     GenServer.call(bucket, :claim_token!, timeout)
   end
 
@@ -114,6 +123,7 @@ defmodule Attempt.Bucket.Token do
 
   def handle_call(:claim_token, from, %{tokens: tokens} = bucket) when tokens > 0 do
     bucket = process_queue(bucket)
+
     if bucket.tokens > 0 do
       bucket = decrement(bucket)
       {:reply, {:ok, bucket.tokens}, bucket}
