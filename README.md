@@ -14,23 +14,24 @@ transient errors
 
 See primarily:
 
-* `Attempt.execute/2` which is the main public api
+* `Attempt.run/2` which is the main public api
 * `Attempt.Bucket.Token.new/2` which defines how to create a token bucket
-* `Attempt.Retry.DefaultPolicy` which shows how a retry policy is defined
+* `Attempt.Retry.Policy.Default` which shows how a retry policy is defined
+* `Attempt.Retry.Backoff.Exponential` which shows the default backoff strategy
 * `Attempt.Retry.Exception` which shows how to classify an exception return
 
 ```
-  iex#> Attempt.execute fn -> "Hello World" end
+  iex#> Attempt.run fn -> "Hello World" end
   "Hello World"
 
-  iex#> Attempt.execute fn -> IO.puts "Reraise Failure!"; div(1,0) end, tries: 3
+  iex#> Attempt.run fn -> IO.puts "Reraise Failure!"; div(1,0) end, tries: 3
   Reraise Failure!
   ** (ArithmeticError) bad argument in arithmetic expression
       :erlang.div(1, 0)
       (attempt) lib/attempt.ex:119: Attempt.execute_function/1
       (attempt) lib/attempt.ex:98: Attempt.execute/6
 
-  iex#> Attempt.execute fn -> IO.puts "Try 3 times"; :error end, tries: 3
+  iex#> Attempt.run fn -> IO.puts "Try 3 times"; :error end, tries: 3
   Try 3 times
   Try 3 times
   Try 3 times
@@ -39,7 +40,7 @@ See primarily:
   # Create a bucket that adds a new token only every 10 seconds
   iex#> {:ok, bucket} = Attempt.Bucket.Token.new :test, fill_rate: 10_000
 
-  iex#> Attempt.execute fn ->
+  iex#> Attempt.run fn ->
           IO.puts "Try 11 times and we'll timeout claiming a token"
           :error
         end, tries: 11, token_bucket: bucket
@@ -55,7 +56,16 @@ See primarily:
   Try 11 times and we'll timeout claiming a token
   {:error, {:timeout, {GenServer, :call, [:test, :claim_token, 5000]}}}
 ```
+### Block form
 
+`Attempt.execute/1/2` is now a macro that allows a block form of coding. On delegates to `Attempt.run/2` after argument processing.
+
+```
+  require Attempt
+  Attempt.execute tries: 3 do
+    IO.puts "Hello world"
+  end
+```
 ## Topics for discussion
 
 * The `Token Bucket` implementation creates a `GenServer` for each bucket and uses `Process.send_after/3` to add tokens to the bucket.  Is this the best approach?
