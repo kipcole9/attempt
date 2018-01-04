@@ -16,6 +16,7 @@ defmodule Attempt.Retry.Budget do
   the `Attempt.Retry.Backoff` behaviour.  The default
   is `Attempt.Retry.Backoff.Default`
   """
+
   defstruct retry_policy: Attempt.Retry.Policy.Default,
             token_bucket: nil,
             tries: 1,

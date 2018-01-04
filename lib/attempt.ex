@@ -1,35 +1,64 @@
 defmodule Attempt do
   @moduledoc """
-  ## Limitations
 
-  This implementation has some limitations that will be progressively
-  removed:
-
-  * No backoff strategy is employed for the retry, retries are controlled
-  by the configured token bucket.
-
-  * No jitter is introduced in the bucket algorithm
-
-  * No leaky bucket token implementation.  The provided token bucket
-  implementation allows for a burst of invokations up to the overall
-  bucket size but it maintains an average execution rate.  A leaky bucket
-  token implementation alternative would not allow a burst rate which
-  in some cases would be a better strategy.
   """
 
   alias Attempt.{Bucket, Retry}
 
   @doc """
-  Execute a function in the context of a retry budget.
+  Implements a block form of `Attempt.execute`.
 
-  A retry budget has two compoents:
+  ## Examples
+
+      iex> require Attempt
+      ...> Attempt.execute tries: 3 do
+      ...>   IO.puts "Welcome to Attempt"
+      ...> end
+      Hi
+      :ok
+
+  """
+  defmacro execute(options, block) do
+    if match?({:fn, _, _}, options) do
+      quote do
+        Attempt.run unquote(options), unquote(block)
+      end
+    else
+      block = block[:do]
+      quote do
+        Attempt.run fn -> unquote(block) end, unquote(options)
+      end
+    end
+  end
+
+  defmacro execute(options) do
+    {block, options} = Keyword.pop(options, :do)
+    if Enum.empty?(options) do
+      quote do
+        Attempt.run fn -> unquote(block) end, []
+      end
+    else
+      quote do
+        Attempt.run fn -> unquote(block) end, unquote(options)
+      end
+    end
+  end
+
+  @doc """
+  Run a function in the context of a retry budget.
+
+  A retry budget has several compoents:
 
   * a `token bucket` which acts to provide retry throttlnh for any retries
 
-  * a number of allowable `retries` that are performed when a failure exit is
-    detected from the   function
+  * a `retry policy` which determines whether to return, retry or reraise
 
-  The given function will be executed until a successful return is detected
+  * a `backoff` strategy which determines the retry backoff strategy
+
+  * a maximum number of allowable `tries` that are performed when in an
+  effort to generate a non-error return
+
+  The given function will be executed until a successful return is delivered
   or the maximum number of tries is exceeded or if no token could be claimed.
 
   ## Arguments
@@ -40,15 +69,18 @@ defmodule Attempt do
 
   ## Options
 
-  * `tries` is the number of times the function will be executed if an error
+  * `:tries` is the number of times the function will be executed if an error
   is returned from the function
 
-  * `token_bucket` is the token bucket used to throttle the execution rate.
+  * `:token_bucket` is the token bucket used to throttle the execution rate.
   Currently only one token bucket is implemented.  See `Attempt.Bucket.Token`
 
-  * `retry_policy` is a module that implements the `Attempt.Retry` behaviour
+  * `:retry_policy` is a module that implements the `Attempt.Retry` behaviour
   to classify the return value from the `fun` as either `:return`, `:retry` or
   `reraise`.  The default `retry_policy` is `Attempt.Retry.DefaultPolicy`.
+
+  * `:backoff` is a module that implements the `Attempt.Retry.Backoff`
+  behaviour which is used to determine the backoff strategy for retries.
 
   ## Default options
 
@@ -58,7 +90,9 @@ defmodule Attempt do
 
   * `:token_bucket` is `Attempt.Bucket.Token.new(@default_bucket_name)`
 
-  * `:retry_policy` is `Attempt.Retry,DefaultPolicy`
+  * `:retry_policy` is `Attempt.Retry,Policy.Default`
+
+  * `:backoff` is `Attempt.Retry.Backoff.Exponential`
 
   ## Retry policy actions
 
@@ -117,9 +151,8 @@ defmodule Attempt do
       {:error, {:timeout, {GenServer, :call, [:test, :claim_token, 5000]}}}
 
   """
-  def execute(fun, options \\ [])
 
-  def execute(fun, options) when is_list(options) do
+  def run(fun, options) when is_list(options) do
     options =
       default_options()
       |> Keyword.merge(options)
@@ -127,10 +160,10 @@ defmodule Attempt do
       |> Map.put(:current_try, 1)
       |> maybe_start_default_bucket
 
-    execute(fun, struct(Retry.Budget, options))
+    run(fun, struct(Retry.Budget, options))
   end
 
-  def execute(
+  def run(
         fun,
         %Retry.Budget{
           retry_policy: retry_policy,
@@ -149,7 +182,7 @@ defmodule Attempt do
           if current_try >= max_tries do
             result
           else
-            execute(fun, %{options | current_try: current_try + 1})
+            run(fun, %{options | current_try: current_try + 1})
           end
 
         :reraise ->

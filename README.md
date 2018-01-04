@@ -62,14 +62,6 @@ See primarily:
 
 * Part of the reason for using a timer-based approach to adding tokens is that it greatly simplifies token acquisition from a client application perspective.  `Attempt.Bucket.claim_token/2` will only return when it has a token or there is a timeout on the acquisition.  Requests are added to a queue when no tokens are available and the queue is processed every time a new token is added and a new claim request is received.  Its possible a selective receive strategy would be better.
 
-* The api may be cleaner if a `block form` could be defined.  That would require a macro but it would mean we could have:
-
-```
-    Attempt.execute fill_rate: 1_000, burst_size: 100 do
-      # execute some function
-    end
-```
-
 * Currently when an exception is returned from the function but the retry policy defines it to be a `:return` classification (rather than a `:reraise` classification) the return is a tuple `{exception, stacktrace}`.  Its not clear thats the most meaninful return result.
 
 ## Todo
