@@ -1,3 +1,22 @@
+## Changelog for Attempt version 0.3.0
+
+### Enhancements
+
+* Add a new backoff strategy `Attempt.Retry.Backoff.None` which does as you'd expect and is the default strategy
+
+* Add a macro `Attempt.execute/1/2` that permits a block form of execution:
+
+```
+  require Attempt
+  Attempt.execute tries: 3 do
+    IO.puts "Hello world"
+  end
+```
+
+### Changes
+
+* Rename `Attempt.execute/1/2` to `Attempt.run/2`.
+
 ## Changelog for Attempt version 0.2.0
 
 ### Enhancements

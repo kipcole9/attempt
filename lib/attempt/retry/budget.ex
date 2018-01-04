@@ -18,10 +18,10 @@ defmodule Attempt.Retry.Budget do
   """
 
   defstruct retry_policy: Attempt.Retry.Policy.Default,
+            backoff_strategy: Attempt.Retry.Backoff.None,
             token_bucket: nil,
             tries: 1,
             current_try: 1,
-            backoff_strategy: nil,
             last_sleep: 0,
             timeout: 5_000
 

@@ -6,7 +6,7 @@ defmodule Attempt do
   alias Attempt.{Bucket, Retry}
 
   @doc """
-  Implements a block form of `Attempt.execute`.
+  Implements a block form of `Attempt.run/2`.
 
   ## Examples
 
