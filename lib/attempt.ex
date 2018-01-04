@@ -175,7 +175,7 @@ defmodule Attempt do
     [
       tries: @default_tries,
       token_bucket: nil,
-      retry_policy: Retry.DefaultPolicy
+      retry_policy: Retry.Policy.Default
     ]
   end
 

@@ -1,4 +1,4 @@
-defmodule Attempt.Retry.DefaultPolicy do
+defmodule Attempt.Retry.Policy.Default do
   @moduledoc """
   Defines the default retry policy.
 
