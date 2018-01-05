@@ -77,12 +77,13 @@ See primarily:
 ## Todo
 
 * [ ] Enforce maximum queue depth in `Attempt.Bucket.Token`
+* [ ] Add Enumerable behaviour for the token bucket and the backoff strategy
 * [ ] Implement a [Leaky Bucket](https://en.wikipedia.org/wiki/Leaky_bucket)
-* [ ] Wire up retry backoff strategies into `Attempt.execute/2`
+* [ ] Wire up retry backoff strategies into `Attempt.run/2`
 * [ ] Tests
 * [ ] Specs
 * [ ] Improve Documentation
-* [ ] Implement the `!` version of `Attempt.execute!/2`
+* [ ] Implement the `!` version of `Attempt.run!/2`
 
 ## Installation
 
@@ -91,7 +92,7 @@ See primarily:
 ```elixir
 def deps do
   [
-    {:attempt, "~> 0.2.0"}
+    {:attempt, "~> 0.4.0"}
   ]
 end
 ```

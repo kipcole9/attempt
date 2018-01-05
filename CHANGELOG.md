@@ -1,3 +1,11 @@
+## Changelog for Attempt version 0.4.0
+
+### Enhancements
+
+* Add backoff strategy delay to retry requests
+
+* Add `Ecto`, `Postgrex`, `DBConnection` exceptions to the exception classifier
+
 ## Changelog for Attempt version 0.3.0
 
 ### Enhancements

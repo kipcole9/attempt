@@ -115,17 +115,17 @@ defmodule Attempt do
 
   ## Examples
 
-      iex#> Attempt.execute fn -> "Hello World" end
+      iex#> Attempt.run fn -> "Hello World" end
       "Hello World"
 
-      iex#> Attempt.execute fn -> IO.puts "Reraise Failure!"; div(1,0) end, tries: 3
+      iex#> Attempt.run fn -> IO.puts "Reraise Failure!"; div(1,0) end, tries: 3
       Reraise Failure!
       ** (ArithmeticError) bad argument in arithmetic expression
           :erlang.div(1, 0)
           (attempt) lib/attempt.ex:119: Attempt.execute_function/1
           (attempt) lib/attempt.ex:98: Attempt.execute/6
 
-      iex#> Attempt.execute fn -> IO.puts "Try 3 times"; :error end, tries: 3
+      iex#> Attempt.run fn -> IO.puts "Try 3 times"; :error end, tries: 3
       Try 3 times
       Try 3 times
       Try 3 times
@@ -134,7 +134,7 @@ defmodule Attempt do
       # Create a bucket that adds a new token only every 10 seconds
       iex#> {:ok, bucket} = Attempt.Bucket.Token.new :test, fill_rate: 10_000
 
-      iex#> Attempt.execute fn ->
+      iex#> Attempt.run fn ->
               IO.puts "Try 11 times and we'll timeout claiming a token"
               :error
             end, tries: 11, token_bucket: bucket
@@ -170,9 +170,10 @@ defmodule Attempt do
           token_bucket: token_bucket,
           tries: max_tries,
           current_try: current_try
-        } = options
+        } = budget
       ) do
-    with {:ok, _remaining_tokens} <- Bucket.claim_token(token_bucket, options),
+    with {:ok, budget} <- backoff(budget),
+         {:ok, _remaining_tokens} <- Bucket.claim_token(token_bucket, budget),
          result = execute_function(fun) do
       case retry_policy.action(result) do
         :return ->
@@ -182,7 +183,7 @@ defmodule Attempt do
           if current_try >= max_tries do
             result
           else
-            run(fun, %{options | current_try: current_try + 1})
+            run(fun, %Retry.Budget{budget | current_try: current_try + 1})
           end
 
         :reraise ->
@@ -199,6 +200,12 @@ defmodule Attempt do
       e ->
         {e, System.stacktrace()}
     end
+  end
+
+  defp backoff(budget) do
+    delay = budget.backoff_strategy.delay(budget)
+    Process.sleep(delay)
+    {:ok, %Retry.Budget{budget | last_sleep: delay}}
   end
 
   @default_bucket_name Attempt.Bucket.Token.Default
