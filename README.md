@@ -17,7 +17,7 @@ See primarily:
 * `Attempt.run/2` which is the main public api
 * `Attempt.Bucket.Token.new/2` which defines how to create a token bucket
 * `Attempt.Retry.Policy.Default` which shows how a retry policy is defined
-* `Attempt.Retry.Backoff.Exponential` which shows the default backoff strategy
+* `Attempt.Retry.Backoff.None` which shows the default backoff strategy
 * `Attempt.Retry.Exception` which shows how to classify an exception return
 
 ```
@@ -79,7 +79,6 @@ See primarily:
 * [ ] Enforce maximum queue depth in `Attempt.Bucket.Token`
 * [ ] Add Enumerable behaviour for the token bucket and the backoff strategy
 * [ ] Implement a [Leaky Bucket](https://en.wikipedia.org/wiki/Leaky_bucket)
-* [ ] Wire up retry backoff strategies into `Attempt.run/2`
 * [ ] Tests
 * [ ] Specs
 * [ ] Improve Documentation
