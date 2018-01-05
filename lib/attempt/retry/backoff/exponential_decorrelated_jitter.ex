@@ -2,7 +2,7 @@ defmodule Attempt.Retry.Backoff.ExponentialDecorrelatedJitter do
   @behaviour Attempt.Retry.Backoff
   alias Attempt.Retry
 
-  @base_delay 10
+  @base_delay 0
   @max_delay 500
 
   def delay(%Retry.Budget{current_try: 1}), do: 0

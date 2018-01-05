@@ -204,7 +204,7 @@ defmodule Attempt do
 
   defp backoff(budget) do
     delay = budget.backoff_strategy.delay(budget)
-    Process.sleep(delay)
+    if delay > 0, do: Process.sleep(delay)
     {:ok, %Retry.Budget{budget | last_sleep: delay}}
   end
 
