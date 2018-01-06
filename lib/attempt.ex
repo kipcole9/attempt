@@ -21,25 +21,27 @@ defmodule Attempt do
   defmacro execute(options, block) do
     if match?({:fn, _, _}, options) do
       quote do
-        Attempt.run unquote(options), unquote(block)
+        Attempt.run(unquote(options), unquote(block))
       end
     else
       block = block[:do]
+
       quote do
-        Attempt.run fn -> unquote(block) end, unquote(options)
+        Attempt.run(fn -> unquote(block) end, unquote(options))
       end
     end
   end
 
   defmacro execute(options) do
     {block, options} = Keyword.pop(options, :do)
+
     if Enum.empty?(options) do
       quote do
-        Attempt.run fn -> unquote(block) end, []
+        Attempt.run(fn -> unquote(block) end, [])
       end
     else
       quote do
-        Attempt.run fn -> unquote(block) end, unquote(options)
+        Attempt.run(fn -> unquote(block) end, unquote(options))
       end
     end
   end

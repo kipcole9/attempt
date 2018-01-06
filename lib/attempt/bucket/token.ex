@@ -93,14 +93,14 @@ defmodule Attempt.Bucket.Token do
     GenServer.call(bucket.name, :state)
   end
 
-  def start_link(name, config \\ @default_config) do
-    config = %{config | tokens: config.burst_size, queue: :queue.new()}
-    GenServer.start_link(__MODULE__, config, name: name)
+  def start_link(name, bucket \\ @default_config) do
+    bucket = %{bucket | tokens: bucket.burst_size, queue: :queue.new()}
+    GenServer.start_link(__MODULE__, bucket, name: name)
   end
 
-  def init(config) do
-    schedule_increment(config)
-    {:ok, config}
+  def init(budget) do
+    schedule_increment(budget)
+    {:ok, budget}
   end
 
   def claim_token(bucket, %Budget{} = budget) do
@@ -133,8 +133,12 @@ defmodule Attempt.Bucket.Token do
   end
 
   def handle_call(:claim_token, from, %{queue: queue} = bucket) do
-    bucket = %{bucket | queue: :queue.in(from, queue)}
-    {:noreply, bucket}
+    if :queue.len(queue) >= bucket.max_queue_length do
+      {:reply, {:error, :full_queue}, bucket}
+    else
+      bucket = %{bucket | queue: :queue.in(from, queue)}
+      {:noreply, bucket}
+    end
   end
 
   def handle_call(:claim_token!, _from, bucket) do

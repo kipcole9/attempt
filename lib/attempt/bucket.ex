@@ -1,5 +1,4 @@
 defprotocol Attempt.Bucket do
-
   @type t :: struct()
 
   @fallback_to_any true
