@@ -71,14 +71,13 @@ defmodule Attempt.Bucket.Token do
     new(name, struct(__MODULE__, config))
   end
 
-  def new(name, config) when is_atom(name) and is_map(config) do
-    config = %{config | name: name}
-
+  def new(name, %Bucket.Token{} = config) when is_atom(name) do
+    config = %Bucket.Token{config | name: name}
     bucket_worker = worker(__MODULE__, [name, config])
 
     case DynamicSupervisor.start_child(Bucket.Supervisor, bucket_worker) do
-      {:ok, _} -> {:ok, config}
-      {:error, reason} -> {:error, reason, config}
+      {:ok, _pid} -> {:ok, config}
+      {:error, {:already_started, _}} -> {:error, already_started_error(config)}
     end
   end
 
@@ -98,6 +97,19 @@ defmodule Attempt.Bucket.Token do
     GenServer.start_link(__MODULE__, bucket, name: name)
   end
 
+  def stop(name) when is_atom(name) do
+    pid = Process.whereis(name)
+    DynamicSupervisor.terminate_child(Bucket.Supervisor, pid)
+  end
+
+  def stop(%Budget{token_bucket: %Bucket.Token{name: name}}) do
+    GenServer.call(name, :stop)
+  end
+
+  def stop(%Bucket.Token{name: name}) do
+    GenServer.stop(name)
+  end
+
   def init(budget) do
     schedule_increment(budget)
     {:ok, budget}
@@ -109,8 +121,8 @@ defmodule Attempt.Bucket.Token do
     try do
       GenServer.call(bucket.name, :claim_token, timeout)
     catch
-      :exit, reason ->
-        {:error, reason}
+      :exit, {:timeout, {GenServer, :call, [bucket_name, :claim_token, timeout]}} ->
+        {:error, timeout_error(bucket_name, timeout)}
     end
   end
 
@@ -134,7 +146,7 @@ defmodule Attempt.Bucket.Token do
 
   def handle_call(:claim_token, from, %{queue: queue} = bucket) do
     if :queue.len(queue) >= bucket.max_queue_length do
-      {:reply, {:error, :full_queue}, bucket}
+      {:reply, {:error, full_queue_error()}, bucket}
     else
       bucket = %{bucket | queue: :queue.in(from, queue)}
       {:noreply, bucket}
@@ -146,7 +158,7 @@ defmodule Attempt.Bucket.Token do
       bucket = decrement(bucket)
       {:reply, {:ok, bucket.tokens}, bucket}
     else
-      {:reply, {:error, 0}, bucket}
+      {:reply, {:error, no_tokens_error()}, bucket}
     end
   end
 
@@ -165,7 +177,7 @@ defmodule Attempt.Bucket.Token do
       bucket
     else
       bucket = decrement(bucket)
-      {{_, pid}, new_queue} = :queue.out(queue)
+      {{:value, pid}, new_queue} = :queue.out(queue)
       GenServer.reply(pid, {:ok, bucket.tokens})
       process_queue(%{bucket | queue: new_queue})
     end
@@ -177,5 +189,27 @@ defmodule Attempt.Bucket.Token do
 
   defp schedule_increment(bucket) do
     Process.send_after(self(), :increment_bucket, bucket.fill_rate)
+  end
+
+  defp no_tokens_error do
+    {Attempt.TokenBucket.NoTokensAvailableError, "No tokens are available"}
+  end
+
+  defp full_queue_error do
+    {Attempt.TokenBucket.FullTokenQueueError, "The request queue for tokens is full"}
+  end
+
+  defp timeout_error(bucket_name, timeout) do
+    {
+      Attempt.TokenBucket.TimeoutError,
+      "Token request for bucket #{inspect bucket_name} timed out after #{timeout} milliseconds"
+    }
+  end
+
+  defp already_started_error(config) do
+    {
+      Attempt.TokenBucket.AlreadyStartedError,
+      "Bucket #{inspect config.name} is already started"
+    }
   end
 end
