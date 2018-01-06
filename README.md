@@ -76,7 +76,6 @@ See primarily:
 
 ## Todo
 
-* [ ] Enforce maximum queue depth in `Attempt.Bucket.Token`
 * [ ] Add Enumerable behaviour for the token bucket and the backoff strategy
 * [ ] Implement a [Leaky Bucket](https://en.wikipedia.org/wiki/Leaky_bucket)
 * [ ] Tests
@@ -91,7 +90,7 @@ See primarily:
 ```elixir
 def deps do
   [
-    {:attempt, "~> 0.4.0"}
+    {:attempt, "~> 0.5.0"}
   ]
 end
 ```

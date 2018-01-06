@@ -1,3 +1,9 @@
+## Changelog for Attempt version 0.5.0
+
+### Enhancements
+
+* Enforce maximum queue length in `Attempt.Bucket.Token` and return `{:error, :full_queue}` if the queue is full
+
 ## Changelog for Attempt version 0.4.0
 
 ### Enhancements
