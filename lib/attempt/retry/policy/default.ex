@@ -25,8 +25,11 @@ defmodule Attempt.Retry.Policy.Default do
 
   def action(:ok), do: :return
   def action({:ok, _}), do: :return
+  def action({:ok, _, _}), do: :return
+
   def action(:error), do: :retry
   def action({:error, _}), do: :retry
+  def action({:error, _, _}), do: :retry
 
   def action({exception, _stracktrace}) do
     if Exception.exception?(exception) do

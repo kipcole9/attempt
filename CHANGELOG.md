@@ -6,6 +6,8 @@
 
 * Add specs to public api
 
+* Standardise error returns with `{:error, {Exception, message}}`
+
 ## Changelog for Attempt version 0.5.0
 
 ### Enhancements
