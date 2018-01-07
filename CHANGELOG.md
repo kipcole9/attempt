@@ -4,6 +4,8 @@
 
 * Add first set of tests and correct a few errors identified in testing
 
+* Add specs to public api
+
 ## Changelog for Attempt version 0.5.0
 
 ### Enhancements

@@ -77,9 +77,6 @@ See primarily:
 ## Todo
 
 * [ ] Add Enumerable behaviour for the token bucket and the backoff strategy
-* [ ] Implement a [Leaky Bucket](https://en.wikipedia.org/wiki/Leaky_bucket)
-* [ ] Specs
-* [ ] Improve Documentation
 * [ ] Implement the `!` version of `Attempt.run!/2`
 
 ## Installation
