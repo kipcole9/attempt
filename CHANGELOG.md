@@ -1,3 +1,9 @@
+## Changelog for Attempt version 0.7.0
+
+### Enhancements
+
+* Update default retry policy to recognise 3-tuple `{:ok, _, _}` and `{:error, _, _}` returns
+
 ## Changelog for Attempt version 0.6.0
 
 ### Enhancements
