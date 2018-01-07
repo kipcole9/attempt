@@ -40,6 +40,7 @@ defmodule Attempt.Bucket.Token do
   alias Attempt.Retry.Budget
 
   require Logger
+  import Attempt.Errors
   import Supervisor.Spec
 
   # Maximum number of tokens that can be consumed in a burst
@@ -77,7 +78,7 @@ defmodule Attempt.Bucket.Token do
 
     case DynamicSupervisor.start_child(Bucket.Supervisor, bucket_worker) do
       {:ok, _pid} -> {:ok, config}
-      {:error, {:already_started, _}} -> {:error, already_started_error(config)}
+      {:error, {:already_started, _}} -> {:error, already_started_error(config), config}
     end
   end
 
@@ -98,16 +99,19 @@ defmodule Attempt.Bucket.Token do
   end
 
   def stop(name) when is_atom(name) do
-    pid = Process.whereis(name)
-    DynamicSupervisor.terminate_child(Bucket.Supervisor, pid)
+    if pid = Process.whereis(name) do
+      DynamicSupervisor.terminate_child(Bucket.Supervisor, pid)
+    else
+      {:error, unknown_bucket_error(name)}
+    end
   end
 
   def stop(%Budget{token_bucket: %Bucket.Token{name: name}}) do
-    GenServer.call(name, :stop)
+    stop(name)
   end
 
   def stop(%Bucket.Token{name: name}) do
-    GenServer.stop(name)
+    stop(name)
   end
 
   def init(budget) do
@@ -191,25 +195,4 @@ defmodule Attempt.Bucket.Token do
     Process.send_after(self(), :increment_bucket, bucket.fill_rate)
   end
 
-  defp no_tokens_error do
-    {Attempt.TokenBucket.NoTokensAvailableError, "No tokens are available"}
-  end
-
-  defp full_queue_error do
-    {Attempt.TokenBucket.FullTokenQueueError, "The request queue for tokens is full"}
-  end
-
-  defp timeout_error(bucket_name, timeout) do
-    {
-      Attempt.TokenBucket.TimeoutError,
-      "Token request for bucket #{inspect bucket_name} timed out after #{timeout} milliseconds"
-    }
-  end
-
-  defp already_started_error(config) do
-    {
-      Attempt.TokenBucket.AlreadyStartedError,
-      "Bucket #{inspect config.name} is already started"
-    }
-  end
 end

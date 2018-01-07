@@ -29,3 +29,11 @@ defmodule Attempt.TokenBucket.AlreadyStartedtError do
     %__MODULE__{message: message}
   end
 end
+
+defmodule Attempt.TokenBucket.UnknownBucketError do
+  defexception [:message]
+
+  def exception(message) do
+    %__MODULE__{message: message}
+  end
+end

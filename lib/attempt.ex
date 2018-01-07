@@ -153,7 +153,7 @@ defmodule Attempt do
       {:error, {:timeout, {GenServer, :call, [:test, :claim_token, 5000]}}}
 
   """
-
+  def run(fun, options \\ [])
   def run(fun, options) when is_list(options) do
     options =
       default_options()
@@ -223,8 +223,10 @@ defmodule Attempt do
 
   defp maybe_start_default_bucket(%{token_bucket: nil} = options) do
     case Bucket.Token.new(@default_bucket_name) do
-      {:ok, bucket} -> %{options | token_bucket: bucket}
-      {:error, {:already_started, _}, bucket} -> %{options | token_bucket: bucket}
+      {:ok, bucket} ->
+        %{options | token_bucket: bucket}
+      {:error, {Attempt.TokenBucket.AlreadyStartedError, _}, bucket} ->
+        %{options | token_bucket: bucket}
     end
   end
 
