@@ -70,7 +70,7 @@ defmodule AttemptTest do
     output = capture_io fn ->
       assert Attempt.run(fn ->
         IO.puts "Try"
-        if Process.get(:count) == 3 do
+        if Process.get(:count) == exit_on_count do
           :ok
         else
           Process.put(:count, Process.get(:count) + 1)
@@ -85,7 +85,9 @@ defmodule AttemptTest do
   test "that we timeout on the bucket if we exceed the burst" do
     tries = 5
     timeout = 500
-    {:ok, bucket} = Attempt.Bucket.Token.new :test, fill_rate: 1_000, burst_size: tries - 1
+    bucket_name = :test
+
+    {:ok, bucket} = Attempt.Bucket.Token.new bucket_name, fill_rate: 1_000, burst_size: tries - 1
     output = capture_io fn ->
       assert Attempt.run(fn ->
         IO.puts "Try"
@@ -93,8 +95,29 @@ defmodule AttemptTest do
       end, tries: tries, token_bucket: bucket, timeout: 500) ==
       {:error,
         {Attempt.TokenBucket.TimeoutError,
-        "Token request for bucket :test timed out after #{timeout} milliseconds"}}
+        "Token request for bucket #{inspect bucket_name} timed out after #{timeout} milliseconds"}}
     end
     assert tries - 1 == String.split(output, "\n", trim: true) |> Enum.count
+  end
+
+  test "that exponential backoff works" do
+    tries = 10
+    strategy = Attempt.Retry.Backoff.Exponential
+    bucket_name = :test
+
+    {:ok, bucket} = Attempt.Bucket.Token.new bucket_name,
+      fill_rate: 1_000, burst_size: tries - 1
+
+    {time, _} = :timer.tc fn ->
+      Attempt.run(fn ->
+        :error
+      end, tries: tries, token_bucket: bucket, backoff_strategy: strategy) == :error
+    end
+    time = div(time, 1000)
+
+    estimated_time = Enum.reduce 1..tries, 0, fn
+      i, acc -> acc + strategy.delay(%Attempt.Retry.Budget{current_try: i})
+    end
+    assert_in_delta estimated_time, time, estimated_time * 0.03
   end
 end
