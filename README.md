@@ -78,7 +78,6 @@ See primarily:
 
 * [ ] Add Enumerable behaviour for the token bucket and the backoff strategy
 * [ ] Implement a [Leaky Bucket](https://en.wikipedia.org/wiki/Leaky_bucket)
-* [ ] Tests
 * [ ] Specs
 * [ ] Improve Documentation
 * [ ] Implement the `!` version of `Attempt.run!/2`

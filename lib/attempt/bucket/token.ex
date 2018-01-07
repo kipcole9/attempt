@@ -56,8 +56,12 @@ defmodule Attempt.Bucket.Token do
             # The name of this bucket
             name: nil
 
+  @type t :: struct()
   @default_config @struct
   @default_timeout 5_000
+
+  @spec new(atom(), Keyword.t() | Bucket.Token.t()) ::
+          {:ok, Bucket.Token.t()} | {:error, {Exception.t(), String.t()}}
 
   def new(name, config \\ @default_config)
 
@@ -82,6 +86,7 @@ defmodule Attempt.Bucket.Token do
     end
   end
 
+  @spec new(atom(), Keyword.t() | Bucket.Token.t()) :: {:ok, Bucket.Token.t()} | no_return()
   def new!(name, config) do
     case new(name, config) do
       {:ok, bucket} -> bucket
@@ -89,6 +94,7 @@ defmodule Attempt.Bucket.Token do
     end
   end
 
+  @spec state(Token.Bucket.t()) :: {:ok, non_neg_integer} | {:error, {Exception.t(), String.t()}}
   def state(bucket) do
     GenServer.call(bucket.name, :state)
   end
@@ -97,6 +103,9 @@ defmodule Attempt.Bucket.Token do
     bucket = %{bucket | tokens: bucket.burst_size, queue: :queue.new()}
     GenServer.start_link(__MODULE__, bucket, name: name)
   end
+
+  @spec stop(atom() | Retry.Budget.t() | Bucket.Token.t()) ::
+          :ok | {:error, {Exception.t(), String.t()}}
 
   def stop(name) when is_atom(name) do
     if pid = Process.whereis(name) do
@@ -194,5 +203,4 @@ defmodule Attempt.Bucket.Token do
   defp schedule_increment(bucket) do
     Process.send_after(self(), :increment_bucket, bucket.fill_rate)
   end
-
 end

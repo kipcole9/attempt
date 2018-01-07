@@ -30,4 +30,3 @@ defimpl Attempt.Bucket, for: Any do
   def state(bucket), do: bucket.__struct__.state(bucket)
   def stop(bucket), do: bucket.__struct__.stop(bucket)
 end
-

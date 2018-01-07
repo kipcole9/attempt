@@ -1,3 +1,9 @@
+## Changelog for Attempt version 0.6.0
+
+### Enhancements
+
+* Add first set of tests and correct a few errors identified in testing
+
 ## Changelog for Attempt version 0.5.0
 
 ### Enhancements

@@ -15,7 +15,7 @@ defmodule Attempt.Errors do
   def timeout_error(bucket_name, timeout) do
     {
       Attempt.TokenBucket.TimeoutError,
-      "Token request for bucket #{inspect bucket_name} timed out after #{timeout} milliseconds"
+      "Token request for bucket #{inspect(bucket_name)} timed out after #{timeout} milliseconds"
     }
   end
 
@@ -23,7 +23,7 @@ defmodule Attempt.Errors do
   def already_started_error(config) do
     {
       Attempt.TokenBucket.AlreadyStartedError,
-      "Bucket #{inspect config.name} is already started"
+      "Bucket #{inspect(config.name)} is already started"
     }
   end
 
@@ -31,7 +31,7 @@ defmodule Attempt.Errors do
   def unknown_bucket_error(name) do
     {
       Attempt.TokenBucket.UnknownBucketError,
-      "Bucket #{inspect name} is not known"
+      "Bucket #{inspect(name)} is not known"
     }
   end
 end
