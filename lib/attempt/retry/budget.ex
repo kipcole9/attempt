@@ -15,6 +15,13 @@ defmodule Attempt.Retry.Budget do
   when retrying execution.  Any module that implements
   the `Attempt.Retry.Backoff` behaviour.  The default
   is `Attempt.Retry.Backoff.Default`
+
+  * `:retry_percent` will allow retrying that percentage
+  of requests. This is a percentage of the number of
+  successful requests over a period of time and therefore
+  will scale the number of retries with the capacity of
+  the service being called.
+
   """
 
   defstruct retry_policy: Attempt.Retry.Policy.Default,
@@ -23,7 +30,8 @@ defmodule Attempt.Retry.Budget do
             tries: 1,
             current_try: 1,
             last_sleep: 0,
-            timeout: 5_000
+            timeout: 5_000,
+            retry_percent: 0.1
 
   alias Attempt.{Bucket, Retry}
 
@@ -34,6 +42,7 @@ defmodule Attempt.Retry.Budget do
           current_try: non_neg_integer,
           backoff_strategy: module(),
           last_sleep: non_neg_integer,
-          timeout: non_neg_integer
+          timeout: non_neg_integer,
+          retry_percent: float()
         }
 end

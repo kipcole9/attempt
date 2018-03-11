@@ -1,37 +1,30 @@
-defmodule Attempt.Bucket.Token do
+defmodule Attempt.Bucket.Dynamic do
   @moduledoc """
-  Implementation of a Token Bucket
+  Implementation of a Dynamic Token Bucket
 
-  A token bucket provides a form of [rate limiting](https://en.wikipedia.org/wiki/Token_bucket)
+  This token bucket is designed to maximise
+  throughput without overloading the service
+  it is protecting.
 
-  This implmentation is designed to allow for both
-  synchronous and asynchronous token requests.  The
-  intent is to simplify the higher level APIs by giving
-  them a soft guarantee of token return.
+  For applications that require rate limiting
+  the token bucket `Attempt.Bucket.Token` is
+  recommended.
 
-  Since the implementation uses timers (via Process.send_after/3)
-  neither the timing precision not the minimum time window
-  are likely to be useful for all applications.
+  The Dynamic bucket maintains in its state the
+  currenct performance of the service it is
+  protecting by treating the `claim_token/1` call
+  as a proxy for service performance. Periodically
+  the number of requests per second is updated
+  and the bucket parameters adjusted to maximise
+  througput without overloading the external
+  service.
 
-  The primary purpose of this token bucket is to
-  support "longer lived" functions such as 3rd party
-  API calls and calls to other external services
-  like databases.
-
-  ## Implementation
-
-  * A bucket is defined to hold a maximum number of tokens
-
-  * The token count is reduced by each call to `get_token/2`
-
-  * When the token count reaches 0, the request is placed in
-  a queue.
-
-  * Every `:fill_rate` milliseconds a new token is created.
-
-  * When the timer is reached and a new token is added the pending
-  queue is processed
-
+  In addition Dynamic bucket provides a mechanism
+  to prevent retry storms.  It does this by limiting
+  the number of retries as a percentage of overall
+  requests.  Therefore as the failure rate goes up,
+  the number of retries will be throttled since
+  overall throughput will drop.
   """
 
   use GenServer
@@ -52,7 +45,15 @@ defmodule Attempt.Bucket.Token do
             # Available tokens
             tokens: 0,
             # Maximum number of tokens that can be consumed in a burst
-            burst_size: 10
+            burst_size: 10,
+            # Number of first requests
+            first_request_count: 0,
+            # Number of retry requests
+            retry_request_count: 0,
+            # Calculate performance over n milliseconds
+            performance_window: 2_000,
+            # Maximum percentage of retries
+            retry_percentage: 0.05
 
   @type t :: struct()
   @default_config @struct

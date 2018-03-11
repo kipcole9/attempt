@@ -1,3 +1,15 @@
+## Changelog for Attempt version 0.8.0
+
+### Enhancements
+
+* If an error tuple is tagged with an exception, pass the exception through the `Attempt.Retry` protocol.  For example an error return from the function of `{:error, %RuntimeError{}}` would retry based upon the retry strategy for the exception `RuntimeError`.
+
+* Add an new bucket type `Attempt.Bucket.Infinite` which will always grant a token.  This results in no rate limiting for retries.  The default bucket is now `Attempt.Bucket.Infinite.new(:default)` and therefore there is no rate limiting by default.
+
+* The retry policy for the exception `TransactionError` is now `:reraise` instead of `:retry`
+
+* The number of exceptions is simplified to only two: `Attempt.TokenBucket.BucketError` and `Attempt.TokenBucket.TimeoutError`
+
 ## Changelog for Attempt version 0.7.0
 
 ### Enhancements

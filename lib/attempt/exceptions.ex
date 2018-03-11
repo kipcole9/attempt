@@ -1,12 +1,4 @@
-defmodule Attempt.TokenBucket.FullTokenQueueError do
-  defexception [:message]
-
-  def exception(message) do
-    %__MODULE__{message: message}
-  end
-end
-
-defmodule Attempt.TokenBucket.NoTokensAvailableError do
+defmodule Attempt.TokenBucket.BucketError do
   defexception [:message]
 
   def exception(message) do
@@ -22,18 +14,3 @@ defmodule Attempt.TokenBucket.TimeoutError do
   end
 end
 
-defmodule Attempt.TokenBucket.AlreadyStartedtError do
-  defexception [:message]
-
-  def exception(message) do
-    %__MODULE__{message: message}
-  end
-end
-
-defmodule Attempt.TokenBucket.UnknownBucketError do
-  defexception [:message]
-
-  def exception(message) do
-    %__MODULE__{message: message}
-  end
-end

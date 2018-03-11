@@ -3,12 +3,12 @@ defmodule Attempt.Errors do
 
   @doc false
   def no_tokens_error do
-    {Attempt.TokenBucket.NoTokensAvailableError, "No tokens are available"}
+    {Attempt.TokenBucket.BucketError, "No tokens are available"}
   end
 
   @doc false
   def full_queue_error do
-    {Attempt.TokenBucket.FullTokenQueueError, "The request queue for tokens is full"}
+    {Attempt.TokenBucket.BucketError, "The request queue for tokens is full"}
   end
 
   @doc false
@@ -22,7 +22,7 @@ defmodule Attempt.Errors do
   @doc false
   def already_started_error(config) do
     {
-      Attempt.TokenBucket.AlreadyStartedError,
+      Attempt.TokenBucket.BucketError,
       "Bucket #{inspect(config.name)} is already started"
     }
   end
@@ -30,7 +30,7 @@ defmodule Attempt.Errors do
   @doc false
   def unknown_bucket_error(name) do
     {
-      Attempt.TokenBucket.UnknownBucketError,
+      Attempt.TokenBucket.BucketError,
       "Bucket #{inspect(name)} is not known"
     }
   end

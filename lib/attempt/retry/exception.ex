@@ -61,6 +61,6 @@ if Code.ensure_loaded?(DBConnection) do
   end
 
   defimpl Attempt.Retry.Exception, for: DBConnection.TransactionError do
-    def retriable?(_exception), do: :retry
+    def retriable?(_exception), do: :reraise
   end
 end

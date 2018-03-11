@@ -223,8 +223,9 @@ defmodule Attempt do
     ]
   end
 
+  @default_bucket_type Bucket.Infinite
   defp maybe_start_default_bucket(%{token_bucket: nil} = options) do
-    case Bucket.Token.new(@default_bucket_name) do
+    case @default_bucket_type.new(@default_bucket_name) do
       {:ok, bucket} ->
         %{options | token_bucket: bucket}
 
